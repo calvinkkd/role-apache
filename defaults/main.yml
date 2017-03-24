@@ -1,0 +1,25 @@
+---
+# defaults file for apache
+
+apache_listen_port: '80'
+apache_ssl_listen_port: '443'
+
+#apache_datavg: rootvg
+#apache_disks:
+
+apache_www_path: '/var/www'
+#apache_www_size: 1g
+apache_log_path: '/var/log/httpd'
+#apache_log_size: 1g
+apache_cert_path: '/etc/httpd/certs'
+
+apache_vhost:
+  - servername: 'prueba.com'
+    serveralias:
+      - 'www.prueba.com'
+    documentroot: '/var/www/prueba'
+#  - servername: 'prueba_dos.com'
+#    documentroot: '/var/www/prueba_dos'
+#    ssl_cert_file: 'localhost_prueba.crt'
+#    ssl_key_file: 'localhost_prueba.key'
+    

@@ -1,0 +1,58 @@
+---
+# tasks file for apache
+
+- name: Create filesystems
+  include: filesystems.yml
+  when: apache_datavg is defined
+
+- name: Create www data directory
+  file: path={{ apache_www_path }} owner=root group=root mode=0755 state=directory
+  when: apache_www_path is defined
+
+- name: Create log directory
+  file: path={{ apache_log_path }} owner=root group=root mode=0700 state=directory
+  when: apache_log_path is defined
+
+- name: Create certificates directory
+  file: path={{ apache_cert_path }} owner=root group=root mode=0700 state=directory
+
+- name: Install software
+  yum: name={{ item }} state=present
+  with_items:
+    - 'httpd'
+    - 'apr'
+    - 'apr-util'
+    - 'httpd-tools'
+    - 'mailcap'
+    - 'mod_ssl'
+
+- name: Service start and enable
+  service: name=httpd state=started enabled=yes
+
+- name: Create config files
+  template: src={{ item.name }} dest={{ item.path }}
+  with_items:
+    - { name: 'httpd.conf.el{{ ansible_distribution_major_version }}.j2', path: '/etc/httpd/conf/httpd.conf' }
+    - { name: 'ssl.conf.el{{ ansible_distribution_major_version }}.j2', path: '/etc/httpd/conf.d/ssl.conf' }
+  notify: Reload Apache
+
+- name: Create vhost document root
+  file: path={{ item.documentroot }} owner=root group=root mode=0755 state=directory
+  with_items: "{{ apache_vhost | default() }}"
+  when: apache_vhost is defined
+
+- name: Copy certificate files
+  copy: src=../files/certs/{{ item.ssl_cert_file }} dest={{ apache_cert_path }} owner=root group=root mode=0700
+  with_items: "{{ apache_vhost | default() }}"
+  when: apache_vhost is defined and item.ssl_cert_file is defined
+
+- name: Copy certificate key files
+  copy: src=../files/certs/{{ item.ssl_key_file }} dest={{ apache_cert_path }} owner=root group=root mode=0700
+  with_items: "{{ apache_vhost | default() }}"
+  when: apache_vhost is defined and item.ssl_key_file is defined
+
+- name: Create virtual hosts
+  template: src=vhost.conf.j2 dest=/etc/httpd/conf.d/vhost_{{ item.servername }}.conf
+  with_items: "{{ apache_vhost | default() }}"
+  when: apache_vhost is defined
+  notify: Reload Apache

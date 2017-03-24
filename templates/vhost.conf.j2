@@ -1,0 +1,38 @@
+<VirtualHost *:{{ apache_listen_port }}>
+    DocumentRoot {{ item.documentroot }}
+    ServerName {{ item.servername }}
+{% if item.serveralias is defined %}
+{% for alias in item.serveralias %}
+    ServerAlias {{ alias }}
+{% endfor %}
+{% endif %}
+    ErrorLog {{ apache_log_path }}/{{ item.servername }}-error_log
+    CustomLog {{ apache_log_path }}/{{ item.servername }}-access_log common
+    <Directory "{{ item.documentroot }}">
+        AllowOverride All
+    </Directory>
+
+</VirtualHost>
+
+{% if item.ssl_cert_file is defined and item.ssl_key_file is defined %}
+
+<VirtualHost *:{{ apache_ssl_listen_port }}>
+    DocumentRoot "{{ item.documentroot }}"
+    ServerName {{ item.servername }}
+{% if item.serveralias is defined %}
+{% for alias in item.serveralias %}
+    ServerAlias {{ alias }}
+{% endfor %}
+{% endif %}
+    ErrorLog {{ apache_log_path }}/{{ item.servername }}-ssl_error_log
+    CustomLog {{ apache_log_path }}/{{ item.servername }}-ss_access_log common
+    <Directory "{{ item.documentroot }}">
+        AllowOverride All
+    </Directory>
+
+    SSLEngine on
+    SSLCertificateFile {{ apache_cert_path }}/{{ item.ssl_cert_file }}
+    SSLCertificateKeyFile {{ apache_cert_path }}/{{ item.ssl_key_file }}
+</VirtualHost>
+
+{% endif %}

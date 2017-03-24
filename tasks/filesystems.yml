@@ -1,0 +1,30 @@
+# Create VG and filesystems
+
+ - name: Create data VG
+   lvg: vg={{ apache_datavg }} pvs={{ apache_disks }}
+   when: apache_disks is defined
+
+ - block:
+   - name: Create data volume
+     lvol: vg={{ apache_datavg }} lv=wwwlv size={{ apache_www_size }}
+  
+   - name: Format data filesystem
+     filesystem: fstype=ext4 dev=/dev/mapper/{{ apache_datavg }}-wwwlv resizefs=yes opts="-m 1"
+  
+   - name: Mount data filesystem
+     mount: name={{ apache_www_path }} src=/dev/mapper/{{ apache_datavg }}-wwwlv fstype=ext4 opts=defaults,noatime dump='1' passno='2' state=mounted
+
+   when: apache_www_size is defined
+
+ - block:
+   - name: Create log volume
+     lvol: vg={{ apache_datavg }} lv=wwwloglv size={{ apache_log_size }}
+
+   - name: Format log filesystem
+     filesystem: fstype=ext4 dev=/dev/mapper/{{ apache_datavg }}-wwwloglv resizefs=yes opts="-m 1"
+
+   - name: Mount log filesystem
+     mount: name={{ apache_log_path }} src=/dev/mapper/{{ apache_datavg }}-wwwloglv fstype=ext4 opts=defaults,noatime dump='1' passno='2' state=mounted
+
+   when: apache_log_size is defined
+
